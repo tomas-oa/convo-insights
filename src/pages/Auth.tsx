@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function Auth() {
@@ -16,19 +16,14 @@ export default function Auth() {
   const [loginPassword, setLoginPassword] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
-  const [signupFullName, setSignupFullName] = useState("");
+  const [signupName, setSignupName] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
-
-      if (error) throw error;
+      await api.login(loginEmail, loginPassword);
       toast.success("¡Bienvenido!");
       navigate("/");
     } catch (error: any) {
@@ -43,24 +38,7 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: signupEmail,
-        password: signupPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-        },
-      });
-
-      if (error) throw error;
-
-      // Create profile
-      if (data.user) {
-        await supabase.from("profiles").insert({
-          user_id: data.user.id,
-          full_name: signupFullName,
-        });
-      }
-
+      await api.signup(signupEmail, signupPassword, signupName);
       toast.success("¡Cuenta creada exitosamente!");
       navigate("/");
     } catch (error: any) {
@@ -130,8 +108,8 @@ export default function Auth() {
                       id="signup-name"
                       type="text"
                       placeholder="Tu nombre"
-                      value={signupFullName}
-                      onChange={(e) => setSignupFullName(e.target.value)}
+                      value={signupName}
+                      onChange={(e) => setSignupName(e.target.value)}
                       required
                     />
                   </div>

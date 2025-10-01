@@ -1,10 +1,8 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { Button } from "./ui/button";
-import { LogOut } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { LogOut, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,22 +10,44 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error("Error al cerrar sesión");
-    } else {
-      navigate("/auth");
-    }
+    navigate("/auth");
   };
 
   return (
     <div className="flex h-screen w-full bg-background">
-      <Sidebar />
+      {/* Desktop Sidebar - always visible on lg+ */}
+      <div className="hidden lg:block">
+        <Sidebar />
+      </div>
+      
+      {/* Mobile Sidebar - toggleable */}
+      <div className="lg:hidden">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </div>
+      
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6">
-          <div className="flex-1" />
+        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            {/* Mobile menu button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden"
+              aria-label="Abrir menú"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            
+            {/* Mobile title */}
+            <div className="lg:hidden">
+              <h2 className="text-sm font-semibold text-foreground">Conversatron</h2>
+            </div>
+          </div>
+          
           <Button
             variant="ghost"
             size="sm"
@@ -35,10 +55,10 @@ export function Layout({ children }: LayoutProps) {
             className="gap-2"
           >
             <LogOut className="h-4 w-4" />
-            Cerrar Sesión
+            <span className="hidden sm:inline">Cerrar Sesión</span>
           </Button>
         </header>
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-4 sm:p-6">
           {children}
         </main>
       </div>

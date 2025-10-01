@@ -1,6 +1,22 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="dark" style="color-scheme: dark;">
   <head>
+    <script>
+      // Prevent flash of unstyled content (FOUC) for dark mode
+      try {
+        const theme = localStorage.getItem('theme') || 'system';
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        const appliedTheme = theme === 'system' ? systemTheme : theme;
+        
+        if (appliedTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = 'dark';
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.style.colorScheme = 'light';
+        }
+      } catch (e) {}
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IA Dashboard - Análisis de Conversaciones</title>

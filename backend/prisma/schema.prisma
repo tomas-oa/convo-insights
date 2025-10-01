@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  name          String
+  photoUrl      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  conversations Conversation[]
+
+  @@map("users")
+}
+
+model Prompt {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  description   String?
+  text          String         // System prompt for AI
+  isActive      Boolean        @default(true)
+  isDefault     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  messages      Message[]      @relation("MessagePrompt")
+  conversations Conversation[] @relation("ConversationPrompt")
+
+  @@map("prompts")
+}
+
+enum ConversationStatus {
+  OPEN
+  CLOSED
+}
+
+enum ChannelType {
+  WEB
+  WHATSAPP
+  INSTAGRAM
+  TELEGRAM
+}
+
+model Conversation {
+  id        String             @id @default(uuid())
+  startDate DateTime           @default(now())
+  endDate   DateTime?
+  duration  Int?               // Total seconds
+  status    ConversationStatus @default(OPEN)
+  channel   ChannelType
+  rating    Int?               // 1-5, rating given by user
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  promptId  String?
+  prompt    Prompt?            @relation("ConversationPrompt", fields: [promptId], references: [id])
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([startDate])
+  @@index([status])
+  @@index([channel])
+  @@index([promptId])
+  @@index([rating])
+  @@map("conversations")
+}
+
+enum MessageRole {
+  USER
+  AI
+  SYSTEM
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  role           MessageRole
+  content        String
+  timestamp      DateTime     @default(now())
+  responseTime   Int?         // Seconds for AI to respond (only for AI messages)
+  promptId       String?      // Which prompt was used for this AI response
+  prompt         Prompt?      @relation("MessagePrompt", fields: [promptId], references: [id])
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([timestamp])
+  @@index([role])
+  @@index([promptId])
+  @@map("messages")
+}

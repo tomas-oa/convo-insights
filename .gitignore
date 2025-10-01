@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Docker
+.env.docker.local
+
+# Supabase (ya no se usa)
+supabase/

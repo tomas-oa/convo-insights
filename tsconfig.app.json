@@ -23,7 +23,8 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@backend/types": ["./backend/src/types/index.ts"]
     }
   },
   "include": ["src"]
