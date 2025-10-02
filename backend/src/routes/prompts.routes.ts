@@ -5,10 +5,7 @@ import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
-// All routes require authentication
 router.use(authenticateToken);
-
-// Validation schemas
 const createPromptSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
@@ -25,7 +22,6 @@ const updatePromptSchema = z.object({
   isDefault: z.boolean().optional(),
 });
 
-// Get all prompts
 router.get('/', async (req: AuthRequest, res) => {
   try {
     const prompts = await prisma.prompt.findMany({
@@ -51,7 +47,6 @@ router.get('/', async (req: AuthRequest, res) => {
   }
 });
 
-// Get active prompt
 router.get('/active', async (req: AuthRequest, res) => {
   try {
     const activePrompt = await prisma.prompt.findFirst({
@@ -77,7 +72,6 @@ router.get('/active', async (req: AuthRequest, res) => {
   }
 });
 
-// Get prompt by ID
 router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
@@ -105,12 +99,9 @@ router.get('/:id', async (req: AuthRequest, res) => {
   }
 });
 
-// Create prompt
 router.post('/', async (req: AuthRequest, res) => {
   try {
     const data = createPromptSchema.parse(req.body);
-
-    // If setting as default, unset other defaults
     if (data.isDefault) {
       await prisma.prompt.updateMany({
         where: { isDefault: true },
@@ -132,13 +123,10 @@ router.post('/', async (req: AuthRequest, res) => {
   }
 });
 
-// Update prompt
 router.patch('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const data = updatePromptSchema.parse(req.body);
-
-    // Check if prompt exists
     const existing = await prisma.prompt.findUnique({
       where: { id },
     });
@@ -146,8 +134,6 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     if (!existing) {
       return res.status(404).json({ error: 'Prompt no encontrado' });
     }
-
-    // If setting as default, unset other defaults
     if (data.isDefault) {
       await prisma.prompt.updateMany({
         where: { 
@@ -173,7 +159,6 @@ router.patch('/:id', async (req: AuthRequest, res) => {
   }
 });
 
-// Activate/deactivate prompt
 router.patch('/:id/toggle', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
@@ -185,8 +170,6 @@ router.patch('/:id/toggle', async (req: AuthRequest, res) => {
     if (!existing) {
       return res.status(404).json({ error: 'Prompt no encontrado' });
     }
-
-    // If activating, deactivate all others (only one active at a time)
     if (!existing.isActive) {
       await prisma.prompt.updateMany({
         where: { 
@@ -211,7 +194,6 @@ router.patch('/:id/toggle', async (req: AuthRequest, res) => {
   }
 });
 
-// Delete prompt
 router.delete('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
@@ -223,8 +205,6 @@ router.delete('/:id', async (req: AuthRequest, res) => {
     if (!existing) {
       return res.status(404).json({ error: 'Prompt no encontrado' });
     }
-
-    // Don't allow deleting the default prompt
     if (existing.isDefault) {
       return res.status(400).json({ error: 'No se puede eliminar el prompt por defecto' });
     }

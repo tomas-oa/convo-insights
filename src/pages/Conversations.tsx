@@ -71,15 +71,13 @@ export default function Conversations() {
     }
   };
 
-  // Filter and search logic
+  // Memoized filtering to avoid recalculation on every render
   const filteredConversations = useMemo(() => {
     return conversations.filter(conv => {
-      // Status filter
       if (filters.status !== "all" && conv.status !== filters.status.toUpperCase()) {
         return false;
       }
 
-      // Rating filter
       if (filters.minRating !== "all") {
         const minRating = parseInt(filters.minRating);
         if (!conv.rating || conv.rating < minRating) {
@@ -87,7 +85,6 @@ export default function Conversations() {
         }
       }
 
-      // Date range filter
       const convDate = new Date(conv.startDate || conv.createdAt);
       if (filters.dateFrom) {
         const fromDate = new Date(filters.dateFrom);
@@ -103,14 +100,12 @@ export default function Conversations() {
     });
   }, [conversations, filters]);
 
-  // Pagination
   const totalPages = Math.ceil(filteredConversations.length / itemsPerPage);
   const paginatedConversations = filteredConversations.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
@@ -134,7 +129,8 @@ export default function Conversations() {
     const secs = seconds % 60;
     
     try {
-      // @ts-ignore - Intl.DurationFormat is not yet in TypeScript types
+      // Use Intl.DurationFormat for localized duration formatting (Stage 3 proposal)
+      // @ts-ignore - Not yet in TypeScript types
       const formatter = new Intl.DurationFormat("es-CL", {
         style: "narrow",
         hoursDisplay: hours > 0 ? "always" : "auto",
@@ -144,7 +140,7 @@ export default function Conversations() {
       
       return formatter.format({ hours, minutes: mins, seconds: secs });
     } catch {
-      // Fallback for browsers that don't support DurationFormat yet
+      // Fallback for browsers without DurationFormat support
       const parts = [];
       if (hours > 0) parts.push(`${hours}h`);
       if (mins > 0) parts.push(`${mins}m`);
@@ -420,16 +416,11 @@ export default function Conversations() {
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
+                    // Simplified pagination calculation
+                    const pageNum = totalPages <= 5 ? i + 1 :
+                      currentPage <= 3 ? i + 1 :
+                      currentPage >= totalPages - 2 ? totalPages - 4 + i :
+                      currentPage - 2 + i;
 
                     return (
                       <Button

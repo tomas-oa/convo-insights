@@ -6,10 +6,7 @@ import { ConversationStatus, ChannelType } from '../../generated/index.js';
 
 const router = Router();
 
-// All routes require authentication
 router.use(authenticateToken);
-
-// Validation schemas
 const createConversationSchema = z.object({
   channel: z.enum(['WEB', 'WHATSAPP', 'INSTAGRAM', 'TELEGRAM']).default('WEB'),
   status: z.enum(['OPEN', 'CLOSED']).default('OPEN'),
@@ -21,7 +18,6 @@ const updateConversationSchema = z.object({
   endDate: z.string().datetime().optional(),
 });
 
-// Get all conversations
 router.get('/', async (req: AuthRequest, res) => {
   try {
     const { status, channel, limit = '50', offset = '0' } = req.query;
@@ -65,7 +61,6 @@ router.get('/', async (req: AuthRequest, res) => {
   }
 });
 
-// Get conversation by ID
 router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
@@ -101,7 +96,6 @@ router.get('/:id', async (req: AuthRequest, res) => {
   }
 });
 
-// Create conversation
 router.post('/', async (req: AuthRequest, res) => {
   try {
     if (!req.userId) {
@@ -109,8 +103,6 @@ router.post('/', async (req: AuthRequest, res) => {
     }
 
     const { channel, status } = createConversationSchema.parse(req.body);
-
-    // Get default or active prompt
     const activePrompt = await prisma.prompt.findFirst({
       where: {
         OR: [
@@ -150,13 +142,10 @@ router.post('/', async (req: AuthRequest, res) => {
   }
 });
 
-// Update conversation
 router.patch('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const updates = updateConversationSchema.parse(req.body);
-
-    // Check if conversation exists
     const existing = await prisma.conversation.findFirst({
       where: {
         id,
@@ -167,12 +156,12 @@ router.patch('/:id', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Conversación no encontrada' });
     }
 
-    // Calculate duration if closing conversation
     const updateData: any = {};
     
     if (updates.status) {
       updateData.status = updates.status as ConversationStatus;
       
+      // Auto-calculate duration when closing a conversation
       if (updates.status === 'CLOSED' && !existing.endDate) {
         updateData.endDate = new Date();
         const duration = Math.floor((new Date().getTime() - existing.startDate.getTime()) / 1000);
@@ -211,7 +200,6 @@ router.patch('/:id', async (req: AuthRequest, res) => {
   }
 });
 
-// Delete conversation
 router.delete('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
@@ -237,7 +225,6 @@ router.delete('/:id', async (req: AuthRequest, res) => {
   }
 });
 
-// Get conversation statistics
 router.get('/:id/stats', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
@@ -264,10 +251,18 @@ router.get('/:id/stats', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Conversación no encontrada' });
     }
 
+    // Single pass message counting - O(n) instead of O(2n)
+    let userMessages = 0;
+    let aiMessages = 0;
+    for (const msg of conversation.messages) {
+      if (msg.role === 'USER') userMessages++;
+      else if (msg.role === 'AI') aiMessages++;
+    }
+
     const stats = {
       totalMessages: conversation.messages.length,
-      userMessages: conversation.messages.filter(m => m.role === 'USER').length,
-      aiMessages: conversation.messages.filter(m => m.role === 'AI').length,
+      userMessages,
+      aiMessages,
       firstMessageAt: conversation.messages[0]?.timestamp || null,
       lastMessageAt: conversation.messages[conversation.messages.length - 1]?.timestamp || null,
       duration: conversation.duration,

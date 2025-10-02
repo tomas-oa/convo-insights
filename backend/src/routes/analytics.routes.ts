@@ -4,15 +4,10 @@ import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
-// All routes require authentication
 router.use(authenticateToken);
-
-// Get dashboard analytics
 router.get('/dashboard', async (req: AuthRequest, res) => {
   try {
-    const { period = 'all' } = req.query; // 'today', 'week', 'month', 'all'
-    
-    // Calculate date range based on period
+    const { period = 'all' } = req.query;
     let startDate: Date | undefined;
     const now = new Date();
     
@@ -33,23 +28,17 @@ router.get('/dashboard', async (req: AuthRequest, res) => {
     }
 
     const dateFilter = startDate ? { gte: startDate } : undefined;
-
-    // Total conversations
     const totalConversations = await prisma.conversation.count({
       where: { 
         ...(dateFilter && { startDate: dateFilter }),
       },
     });
-
-    // Open conversations
     const openConversations = await prisma.conversation.count({
       where: {
         status: 'OPEN',
         ...(dateFilter && { startDate: dateFilter }),
       },
     });
-
-    // Total messages
     const totalMessages = await prisma.message.count({
       where: {
         conversation: {
@@ -57,8 +46,6 @@ router.get('/dashboard', async (req: AuthRequest, res) => {
         },
       },
     });
-
-    // Average rating
     const avgRatingResult = await prisma.conversation.aggregate({
       where: {
         rating: { not: null },
@@ -68,8 +55,6 @@ router.get('/dashboard', async (req: AuthRequest, res) => {
         rating: true,
       },
     });
-
-    // Satisfaction percentage (conversations with rating >= 4)
     const totalRatedConversations = await prisma.conversation.count({
       where: {
         rating: { not: null },
@@ -87,8 +72,6 @@ router.get('/dashboard', async (req: AuthRequest, res) => {
     const satisfactionPercentage = totalRatedConversations > 0 
       ? (satisfactoryConversations / totalRatedConversations) * 100 
       : 0;
-
-    // Average AI response time
     const avgResponseTimeResult = await prisma.message.aggregate({
       where: {
         role: 'AI',
@@ -101,8 +84,6 @@ router.get('/dashboard', async (req: AuthRequest, res) => {
         responseTime: true,
       },
     });
-
-    // Conversations by channel
     const channelStats = await prisma.conversation.groupBy({
       by: ['channel'],
       where: { 
@@ -117,8 +98,6 @@ router.get('/dashboard', async (req: AuthRequest, res) => {
         },
       },
     });
-
-    // Conversations by status
     const statusStats = await prisma.conversation.groupBy({
       by: ['status'],
       where: { 
@@ -128,8 +107,6 @@ router.get('/dashboard', async (req: AuthRequest, res) => {
         id: true,
       },
     });
-
-    // Recent conversations (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -168,8 +145,6 @@ router.get('/dashboard', async (req: AuthRequest, res) => {
     res.status(500).json({ error: 'Error al obtener analíticas' });
   }
 });
-
-// Get conversation trends
 router.get('/trends', async (req: AuthRequest, res) => {
   try {
     const { days = '30' } = req.query;
@@ -177,7 +152,6 @@ router.get('/trends', async (req: AuthRequest, res) => {
     daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
     daysAgo.setUTCHours(0, 0, 0, 0);
 
-    // Get all conversations in the date range
     const conversations = await prisma.conversation.findMany({
       where: {
         startDate: {
@@ -191,51 +165,46 @@ router.get('/trends', async (req: AuthRequest, res) => {
       },
     });
 
-    // Group by date in local timezone
     const trendsMap = new Map<string, {
       conversations: number;
       open: number;
       closed: number;
-      ratings: number[];
+      ratingSum: number;
+      ratingCount: number;
     }>();
 
+    // Single pass aggregation - O(n)
     conversations.forEach(conv => {
-      // Convert to local date string (YYYY-MM-DD)
-      const localDate = new Date(conv.startDate).toLocaleDateString('en-CA'); // en-CA gives YYYY-MM-DD format
+      // Use ISO format (YYYY-MM-DD) for consistent date matching
+      const localDate = new Date(conv.startDate).toISOString().split('T')[0];
       
       if (!trendsMap.has(localDate)) {
         trendsMap.set(localDate, {
           conversations: 0,
           open: 0,
           closed: 0,
-          ratings: [],
+          ratingSum: 0,
+          ratingCount: 0,
         });
       }
 
       const dayData = trendsMap.get(localDate)!;
       dayData.conversations++;
+      dayData[conv.status === 'OPEN' ? 'open' : 'closed']++;
       
-      if (conv.status === 'OPEN') {
-        dayData.open++;
-      } else {
-        dayData.closed++;
-      }
-
       if (conv.rating !== null) {
-        dayData.ratings.push(conv.rating);
+        dayData.ratingSum += conv.rating;
+        dayData.ratingCount++;
       }
     });
 
-    // Convert to array and calculate averages
     const result = Array.from(trendsMap.entries())
       .map(([date, data]) => ({
         date,
         conversations: data.conversations,
         open: data.open,
         closed: data.closed,
-        avg_rating: data.ratings.length > 0
-          ? data.ratings.reduce((sum, r) => sum + r, 0) / data.ratings.length
-          : null,
+        avg_rating: data.ratingCount > 0 ? data.ratingSum / data.ratingCount : null,
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -245,8 +214,6 @@ router.get('/trends', async (req: AuthRequest, res) => {
     res.status(500).json({ error: 'Error al obtener tendencias' });
   }
 });
-
-// Get rating distribution
 router.get('/ratings', async (req: AuthRequest, res) => {
   try {
     const ratings = await prisma.conversation.groupBy({
@@ -271,8 +238,6 @@ router.get('/ratings', async (req: AuthRequest, res) => {
     res.status(500).json({ error: 'Error al obtener distribución de calificaciones' });
   }
 });
-
-// Get prompt analytics (Top 5 worst prompts by rating)
 router.get('/prompts', async (req: AuthRequest, res) => {
   try {
     const promptStats = await prisma.conversation.groupBy({
@@ -289,7 +254,10 @@ router.get('/prompts', async (req: AuthRequest, res) => {
       },
     });
 
-    // Get prompt details
+    if (promptStats.length === 0) {
+      return res.json([]);
+    }
+
     const promptIds = promptStats.map(s => s.promptId).filter(Boolean) as string[];
     const prompts = await prisma.prompt.findMany({
       where: {

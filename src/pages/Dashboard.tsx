@@ -42,12 +42,13 @@ export default function Dashboard() {
 
   const loadStats = async () => {
     try {
-      // Load stats for current period
       const analytics = await api.getDashboardAnalytics(period);
       
-      // Also load week and month totals for display
-      const weekAnalytics = await api.getDashboardAnalytics('week');
-      const monthAnalytics = await api.getDashboardAnalytics('month');
+      // Parallel loading for week and month totals - O(1) instead of O(3)
+      const [weekAnalytics, monthAnalytics] = await Promise.all([
+        api.getDashboardAnalytics('week'),
+        api.getDashboardAnalytics('month'),
+      ]);
       
       setStats({
         totalConversations: analytics.totals.conversations,
@@ -63,46 +64,43 @@ export default function Dashboard() {
 
   const loadChartData = async () => {
     try {
-      // Show last 7 days including today
       const days = 7;
       const trends = await api.getTrends(days);
       
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Reset to start of day
+      // Build lookup map for O(1) access - performance optimization
+      const trendsMap = new Map(
+        trends.map((t: any) => {
+          const trendDate = t.date?.includes('T') ? t.date.split('T')[0] : t.date;
+          return [trendDate, t];
+        })
+      );
       
-      // Create data for last 7 days (6 days ago + today)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Generate chart data for last 7 days
       const data = Array.from({ length: days }, (_, i) => {
         const date = new Date(today);
         date.setDate(date.getDate() - (days - 1 - i));
         
-        // Format date as YYYY-MM-DD in local timezone (not UTC)
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         const dateStr = `${year}-${month}-${day}`;
         
-        const trend = trends.find((t: any) => {
-          if (!t.date) return false;
-          // Compare just the date part (handle both ISO timestamps and date strings)
-          const trendDate = t.date.includes('T') ? t.date.split('T')[0] : t.date;
-          const match = trendDate === dateStr;
-          return match;
-        });
+        const trend = trendsMap.get(dateStr);
         
-        // Format label using Intl API for better localization
-        const label = new Intl.DateTimeFormat('es-AR', {
+        const label = new Intl.DateTimeFormat('es-CL', {
           day: 'numeric',
           month: 'short'
         }).format(date);
         
-        const dataPoint = {
+        return {
           name: label,
           conversaciones: trend?.conversations || 0,
           date: dateStr,
-          fullDate: date.toLocaleDateString('es-AR'),
+          fullDate: date.toLocaleDateString('es-CL'),
         };
-        
-        return dataPoint;
       });
 
       setChartData(data);

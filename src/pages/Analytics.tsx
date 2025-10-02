@@ -47,11 +47,12 @@ export default function Analytics() {
 
   const isLoading = ratingsLoading || promptsLoading || dashboardLoading;
 
-  // Transform ratings data for the bar chart
+  // Build lookup map for O(1) access instead of O(n) find in loop
+  const ratingsMap = new Map(ratingsData.map(item => [item.rating, item.count]));
   const total = ratingsData.reduce((sum, item) => sum + item.count, 0) || 1;
+  
   const ratingDistribution = [1, 2, 3, 4, 5].map((rating) => {
-    const found = ratingsData.find((item: RatingDistribution) => item.rating === rating);
-    const count = found?.count || 0;
+    const count = ratingsMap.get(rating) || 0;
     return {
       rating: `${rating} ⭐`,
       ratingValue: rating,

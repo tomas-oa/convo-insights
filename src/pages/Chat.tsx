@@ -131,7 +131,7 @@ export default function Chat() {
     const messageText = newMessage;
     setNewMessage("");
 
-    // Create optimistic user message to show immediately
+    // Optimistic UI update: show user message immediately for better UX
     const optimisticUserMessage = {
       id: `temp-${Date.now()}`,
       content: messageText,
@@ -140,22 +140,20 @@ export default function Chat() {
       timestamp: new Date().toISOString(),
     };
 
-    // Add user message immediately (optimistic update)
     setMessages(prev => [...prev, optimisticUserMessage]);
 
     try {
       const response = await api.sendChatMessage(id!, messageText);
-      // Replace optimistic message with real one from backend
+      // Replace temporary message with server-confirmed version
       setMessages(prev => 
         prev.map(msg => 
           msg.id === optimisticUserMessage.id ? response.userMessage : msg
         )
       );
-      // AI message will be added via WebSocket when ready
     } catch (error: any) {
       toast.error("No se pudo enviar el mensaje");
       console.error(error);
-      // Remove optimistic message on error
+      // Rollback optimistic update on error
       setMessages(prev => prev.filter(msg => msg.id !== optimisticUserMessage.id));
       setNewMessage(messageText);
       setIsTyping(false);

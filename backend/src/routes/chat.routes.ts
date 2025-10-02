@@ -7,7 +7,6 @@ import { io } from '../server.js';
 
 const router = Router();
 
-// All routes require authentication
 router.use(authenticateToken);
 
 // Validation schema
@@ -16,12 +15,9 @@ const chatMessageSchema = z.object({
   message: z.string().min(1),
 });
 
-// Send message and get AI response
 router.post('/', async (req: AuthRequest, res) => {
   try {
     const { conversationId, message } = chatMessageSchema.parse(req.body);
-
-    // Check if conversation belongs to user and is open
     const conversation = await prisma.conversation.findFirst({
       where: {
         id: conversationId,
@@ -39,8 +35,6 @@ router.post('/', async (req: AuthRequest, res) => {
     if (conversation.status === 'CLOSED') {
       return res.status(400).json({ error: 'La conversación está cerrada' });
     }
-
-    // Insert user message
     const userMessage = await prisma.message.create({
       data: {
         conversationId,
@@ -49,38 +43,31 @@ router.post('/', async (req: AuthRequest, res) => {
       },
     });
 
-    // Emit typing indicator via WebSocket
     io.to(`conversation-${conversationId}`).emit('ai-typing', { conversationId, isTyping: true });
 
     const startTime = Date.now();
     let aiResponse: string;
 
     try {
-      // Get conversation history for context
+      // Retrieve last 10 messages for context (excluding SYSTEM role - not supported by Gemini)
       const previousMessages = await prisma.message.findMany({
         where: {
           conversationId,
-          id: { not: userMessage.id }, // Exclude the just-created user message
-          role: { not: 'SYSTEM' }, // Exclude SYSTEM messages - Gemini doesn't support them
+          id: { not: userMessage.id },
+          role: { not: 'SYSTEM' },
         },
         orderBy: {
           timestamp: 'asc',
         },
-        take: 10, // Last 10 messages for context
+        take: 10,
       });
 
-      // Build conversation history in Gemini format
       const conversationHistory = previousMessages
-        .filter(msg => msg.role === 'USER' || msg.role === 'AI') // Extra safety filter
         .map(msg => ({
           role: msg.role === 'USER' ? 'user' as const : 'model' as const,
           parts: [{ text: msg.content }],
         }));
-
-      // Get system prompt from conversation's assigned prompt
       const systemPrompt = conversation.prompt?.text || 'Eres un asistente útil y amigable. Responde de manera clara y concisa.';
-
-      // Generate AI response using Gemini
       if (geminiService.isAvailable()) {
         aiResponse = await geminiService.generateResponse(
           message,
@@ -95,7 +82,7 @@ router.post('/', async (req: AuthRequest, res) => {
       console.error('Error details:', error.message || error);
       console.error('Error stack:', error.stack);
       
-      // Provide more specific error messages
+      // Provide user-friendly error messages based on error type
       if (error.message?.includes('API key')) {
         aiResponse = 'Error: La API key de Gemini no es válida o ha expirado.';
       } else if (error.message?.includes('quota') || error.message?.includes('rate limit')) {
@@ -108,8 +95,6 @@ router.post('/', async (req: AuthRequest, res) => {
     }
 
     const responseTime = Math.floor((Date.now() - startTime) / 1000);
-
-    // Insert AI response
     const aiMessage = await prisma.message.create({
       data: {
         conversationId,
@@ -120,7 +105,6 @@ router.post('/', async (req: AuthRequest, res) => {
       },
     });
 
-    // Stop typing indicator and emit new message via WebSocket
     io.to(`conversation-${conversationId}`).emit('ai-typing', { conversationId, isTyping: false });
     io.to(`conversation-${conversationId}`).emit('new-message', { message: aiMessage });
 
