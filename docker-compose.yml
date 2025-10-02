@@ -6,7 +6,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: conversatron-backend
+    container_name: convo-insights-backend
     restart: unless-stopped
     environment:
       PORT: 3001
@@ -14,16 +14,16 @@ services:
       DATABASE_URL: file:/app/data/prod.db
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
       JWT_EXPIRES_IN: 7d
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "3001:3001"
     volumes:
       - sqlite_data:/app/data
     networks:
-      - conversatron-network
+      - convo-insights-network
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -36,16 +36,16 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
-    container_name: conversatron-frontend
+    container_name: convo-insights-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "3000:3000"
     depends_on:
       - backend
     networks:
-      - conversatron-network
+      - convo-insights-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -55,5 +55,5 @@ volumes:
     driver: local
 
 networks:
-  conversatron-network:
+  convo-insights-network:
     driver: bridge

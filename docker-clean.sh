@@ -17,15 +17,18 @@ fi
 
 echo -e "${RED}🗑️  Limpiando...${NC}"
 
-# Stop and remove containers
+echo "🧹 Limpiando contenedores de Convo Insights..."
 docker-compose down -v
-docker-compose -f docker-compose.dev.yml down -v
 
-# Remove images
+echo "🗑️  Eliminando imágenes de Convo Insights..."
 docker rmi conversatron-dashboard-backend conversatron-dashboard-frontend 2>/dev/null || true
-docker rmi conversatron-dashboard-backend-dev 2>/dev/null || true
 
-# Remove volumes
+echo "🗑️  Eliminando contenedores huérfanos..."
+docker container prune -f
+
+echo "🗑️  Eliminando volúmenes no utilizados..."
+docker volume prune -f
+
 docker volume rm conversatron-dashboard_sqlite_data 2>/dev/null || true
 docker volume rm conversatron-dashboard_sqlite_data_dev 2>/dev/null || true
 docker volume rm conversatron-dashboard_backend_node_modules 2>/dev/null || true

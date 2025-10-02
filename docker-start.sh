@@ -9,7 +9,7 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}"
 echo "╔═══════════════════════════════════════╗"
-echo "║   🐳 Conversatron Docker Setup       ║"
+echo "║   🐳 Convo Insights Docker Setup     ║"
 echo "╚═══════════════════════════════════════╝"
 echo -e "${NC}"
 
@@ -32,25 +32,10 @@ fi
 echo -e "${GREEN}✅ Docker está corriendo${NC}"
 echo ""
 
-# Check for .env.docker.local, if not exists, copy from .env.docker
-if [ ! -f .env.docker.local ]; then
-    echo -e "${YELLOW}⚠️  Creando .env.docker.local desde .env.docker${NC}"
-    cp .env.docker .env.docker.local
-    echo -e "${YELLOW}⚠️  Por favor edita .env.docker.local con tus configuraciones${NC}"
-    echo ""
-fi
-
-# Ask user which mode to run
-echo "Selecciona el modo de ejecución:"
-echo "1) Producción (optimizado, sin hot reload)"
-echo "2) Desarrollo (con hot reload para backend)"
+echo -e "${BLUE}🚀 Iniciando Conversatron...${NC}"
+echo -e "${GREEN}Frontend: http://localhost:3000${NC}"
+echo -e "${GREEN}Backend API: http://localhost:3001${NC}"
 echo ""
-read -p "Opción [1-2]: " mode
 
-if [ "$mode" == "2" ]; then
-    echo -e "${BLUE}🚀 Iniciando en modo DESARROLLO...${NC}"
-    docker-compose -f docker-compose.dev.yml --env-file .env.docker.local up --build
-else
-    echo -e "${BLUE}🚀 Iniciando en modo PRODUCCIÓN...${NC}"
-    docker-compose --env-file .env.docker.local up --build
-fi
+# Start Docker Compose
+docker-compose --env-file .env.docker up --build

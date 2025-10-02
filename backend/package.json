@@ -1,7 +1,7 @@
 {
-  "name": "conversatron-backend",
+  "name": "convo-insights-backend",
   "version": "1.0.0",
-  "description": "Backend API for Conversatron Dashboard",
+  "description": "Backend API for Convo Insights Dashboard",
   "main": "dist/server.js",
   "types": "src/types/index.ts",
   "type": "module",

@@ -1,4 +1,4 @@
-# 💬 Conversatron Dashboard
+# 💬 Convo Insights Dashboard
 
 Dashboard de análisis de conversaciones con IA, construido con React + Express + SQLite.
 
@@ -39,21 +39,28 @@ Dashboard de análisis de conversaciones con IA, construido con React + Express 
 
 ```bash
 # 1. Clonar el repositorio
-git clone <tu-repo>
-cd conversatron-dashboard
+git clone https://github.com/tomas-oa/convo-insights.git
+cd convo-insights
 
-# 2. Configurar variables de entorno
-cp .env.docker .env.docker.local
-# Edita .env.docker.local y genera un JWT_SECRET seguro
-
-# 3. Iniciar con Docker
+# 2. Iniciar con Docker (usa configuración por defecto)
 chmod +x docker-start.sh
 ./docker-start.sh
 
-# 4. Acceder a la aplicación
-# Frontend: http://localhost
+# O directamente:
+docker-compose --env-file .env.docker up --build -d
+
+# 3. Acceder a la aplicación
+# Frontend: http://localhost:3000
 # Backend API: http://localhost:3001
+
+# 4. Detener
+docker-compose down
+
+# 5. Limpiar todo (opcional)
+./docker-clean.sh
 ```
+
+**Nota**: La configuración por defecto funciona out-of-the-box sin necesidad de configurar nada. Para producción, edita `.env.docker` y actualiza `JWT_SECRET` y `GEMINI_API_KEY`.
 
 ### Opción 2: Instalación Local
 
@@ -242,11 +249,8 @@ El proyecto usa **Prisma ORM** con **SQLite**. La base de datos se crea automát
 ### Comandos Docker Manuales
 
 ```bash
-# Iniciar en producción
-docker-compose up --build
-
-# Iniciar en desarrollo (con hot reload)
-docker-compose -f docker-compose.dev.yml up --build
+# Iniciar
+docker-compose --env-file .env.docker up --build
 
 # Ver logs
 docker-compose logs -f
@@ -269,13 +273,13 @@ docker-compose build --no-cache
 El stack incluye 2 servicios:
 
 1. **Backend** (puerto 3001)
-   - API Express con Prisma
+   - API con Bun + Prisma
    - SQLite integrado en volumen
    - Health checks configurados
 
-2. **Frontend** (puerto 80)
+2. **Frontend** (puerto 3000)
    - React + Vite build
-   - Servido con Nginx
+   - Servido con `serve`
    - Optimizado para producción
 
 ### Volúmenes
@@ -355,7 +359,7 @@ El stack incluye 2 servicios:
 ### DevOps
 - **Docker** - Containerización
 - **Docker Compose** - Orquestación
-- **Nginx** - Servidor web (producción)
+- **Bun** - Runtime moderno y rápido
 
 ---
 
@@ -689,7 +693,7 @@ El resultado es un dashboard profesional, listo para producción (con las consid
 ## 📁 Estructura del Proyecto
 
 ```
-conversatron-dashboard/
+convo-insights/
 ├── backend/                      # Backend Express
 │   ├── prisma/
 │   │   ├── migrations/          # Migraciones de DB
@@ -706,8 +710,7 @@ conversatron-dashboard/
 │   │   │   └── analytics.routes.ts
 │   │   ├── types/               # TypeScript types
 │   │   └── server.ts            # Entry point
-│   ├── Dockerfile               # Docker producción
-│   ├── Dockerfile.dev           # Docker desarrollo
+│   ├── Dockerfile               # Docker con Bun
 │   ├── package.json
 │   └── .env.example
 │

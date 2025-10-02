@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { Button } from "./ui/button";
 import { LogOut, Menu } from "lucide-react";
@@ -12,15 +12,14 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const handleLogout = async () => {
-    navigate("/auth");
-  };
+  useEffect(() => {
+    document.title = "Convo Insights Dashboard";
+  }, []);
 
   return (
     <div className="flex h-screen w-full bg-background">
       {/* Desktop Sidebar - always visible on lg+ */}
       <div className="hidden lg:block">
-        <Sidebar />
       </div>
       
       {/* Mobile Sidebar - toggleable */}
@@ -44,14 +43,17 @@ export function Layout({ children }: LayoutProps) {
             
             {/* Mobile title */}
             <div className="lg:hidden">
-              <h2 className="text-sm font-semibold text-foreground">Conversatron</h2>
+              <h2 className="text-sm font-semibold text-foreground">Convo Insights</h2>
             </div>
           </div>
           
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleLogout}
+            onClick={() => {
+              localStorage.removeItem('token');
+              navigate('/auth');
+            }}
             className="gap-2"
           >
             <LogOut className="h-4 w-4" />

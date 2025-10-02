@@ -40,7 +40,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           <div className="flex items-center">
             <MessageCircle className="h-6 w-6 text-primary" />
             <div className="ml-3">
-              <h1 className="text-lg font-semibold text-sidebar-foreground">Conversatron</h1>
+              <h1 className="text-lg font-semibold text-sidebar-foreground">Convo Insights</h1>
               <p className="text-xs text-muted-foreground">Analytics Dashboard</p>
             </div>
           </div>
@@ -86,7 +86,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           </div>
           <div className="text-xs text-muted-foreground">
             <p className="font-medium">v1.0.0</p>
-            <p className="mt-1">© 2025 Conversatron</p>
+            <p className="mt-1">© 2025 Convo Insights</p>
           </div>
         </div>
       </div>

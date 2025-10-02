@@ -1,41 +1,53 @@
 # Backend Dockerfile
-FROM node:18-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
+COPY package.json bun.lockb tsconfig.json ./
 
 # Install dependencies
-RUN npm ci
+RUN bun install --frozen-lockfile
+
+# Copy Prisma schema
+COPY prisma ./prisma
+
+# Generate Prisma client
+RUN bun run db:generate
 
 # Copy source code
 COPY src ./src
 
 # Build TypeScript
-RUN npm run build
+RUN bun run build
 
 # Production stage
-FROM node:18-alpine
+FROM oven/bun:1-alpine
 
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json bun.lockb ./
 
 # Install production dependencies only
-RUN npm ci --only=production
+RUN bun install --production --frozen-lockfile
+
+# Copy Prisma schema and generate client
+COPY prisma ./prisma
+RUN bun run db:generate
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
+
+# Create data directory for SQLite
+RUN mkdir -p /app/data
 
 # Expose port
 EXPOSE 3001
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
 
 # Start the application
-CMD ["node", "dist/server.js"]
+CMD ["bun", "run", "dist/server.js"]

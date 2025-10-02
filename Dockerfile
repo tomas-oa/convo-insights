@@ -1,35 +1,39 @@
 # Frontend Dockerfile
-FROM node:18-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json bun.lockb ./
 
 # Install dependencies
-RUN npm ci
+RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN npm run build
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+RUN bun run build
 
-# Production stage with nginx
-FROM nginx:alpine
+# Production stage
+FROM oven/bun:1-alpine
 
-# Copy built files
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Install serve globally
+RUN bun add -g serve
+
+# Copy built files from builder
+COPY --from=builder /app/dist ./dist
 
 # Expose port
-EXPOSE 80
+EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start serve
+CMD ["serve", "-s", "dist", "-l", "3000"]
