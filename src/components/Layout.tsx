@@ -20,6 +20,7 @@ export function Layout({ children }: LayoutProps) {
     <div className="flex h-screen w-full bg-background">
       {/* Desktop Sidebar - always visible on lg+ */}
       <div className="hidden lg:block">
+        <Sidebar />
       </div>
       
       {/* Mobile Sidebar - toggleable */}

@@ -49,5 +49,5 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
 
-# Start the application
-CMD ["bun", "run", "dist/server.js"]
+# Start the application with migrations and seed
+CMD ["sh", "-c", "bun run db:migrate && bun run db:seed && bun run dist/server.js"]

@@ -21,12 +21,12 @@
     "lint": "eslint src --ext .ts",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "bun run prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "bun run prisma/seed.ts"
   },
   "keywords": ["express", "api", "chat", "ai"],
   "author": "",
