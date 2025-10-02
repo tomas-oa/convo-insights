@@ -16,11 +16,10 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || 'default-secret-change-in-production',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:8080',
-  geminiApiKey: process.env.GEMINI_API_KEY || 'AIzaSyCHQCqXstV7itTXp2llCWyuPx-pPZDwk5Y',
+  geminiApiKey: process.env.GEMINI_API_KEY
 };
 
-// Validate required environment variables
-const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
+const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET', 'GEMINI_API_KEY'];
 
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {

@@ -11,39 +11,34 @@
 
 ## Cómo arrancar (Docker)
 
-```bash
-# 1. Clonar el repositorio
-git clone <url-del-repositorio>
-cd convo-insights
-
-# 2. Iniciar con Docker
-chmod +x docker-start.sh
-./docker-start.sh
-
-# 3. Abrir en el navegador
-# Frontend: http://localhost:3000
-```
-
-La aplicación arranca sin configuración adicional, pero **requiere una API key de Gemini para las respuestas de IA**.
-
-### Configurar API de IA (Requerido para respuestas reales)
+### Setup Rápido
 
 **Paso 1:** Obtén tu API key gratuita de Google Gemini:
 - Ve a: https://aistudio.google.com/app/apikey
 - Haz clic en "Create API Key"
 - Copia la key generada
 
-**Paso 2:** Configura la API key en `.env.docker`:
+**Paso 2:** Agrega tu API key al archivo `.env.docker`:
 ```bash
-# Edita el archivo .env.docker
+# Edita el archivo .env.docker en la raíz del proyecto
 GEMINI_API_KEY=tu-api-key-aqui
 ```
 
-**Paso 3:** Reinicia los contenedores:
+**Paso 3:** Inicia la aplicación:
 ```bash
-./docker-stop.sh
+# Clonar el repositorio
+git clone <url-del-repositorio>
+cd convo-insights
+
+# Iniciar con Docker (se encarga de todo)
+chmod +x docker-start.sh
 ./docker-start.sh
+
+# Abrir en el navegador
+# Frontend: http://localhost:3000
 ```
+
+**Docker se encarga del resto**: Base de datos, migraciones, dependencias, y configuración.
 
 **Sin API key**: La aplicación funcionará pero mostrará respuestas simuladas de IA.
 
