@@ -6,17 +6,17 @@ WORKDIR /app
 # Copy package files
 COPY package.json bun.lockb tsconfig.json ./
 
-# Install dependencies
-RUN bun install --frozen-lockfile
-
-# Copy Prisma schema
+# Copy Prisma schema first (needed for generation)
 COPY prisma ./prisma
-
-# Generate Prisma client
-RUN bun run db:generate
 
 # Copy source code
 COPY src ./src
+
+# Install ALL dependencies (including devDependencies for build)
+RUN bun install --frozen-lockfile
+
+# Generate Prisma client
+RUN bun run db:generate
 
 # Build TypeScript
 RUN bun run build
