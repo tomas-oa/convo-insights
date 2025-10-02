@@ -241,6 +241,8 @@ User (1) ──── (N) Conversation (1) ──── (N) Message
 
 ## Alcance del Proyecto
 
+Se priorizó completitud y velocidad sobre optimizaciones y código limpio (ups)
+
 #### **Vistas y Navegación**
 - **Resumen/Dashboard**: KPIs, gráficos de tendencia, métricas clave
 - **Conversaciones**: Tabla paginada con filtros avanzados
